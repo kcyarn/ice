@@ -7,7 +7,8 @@ This version of ICE uses JQuery 2.1.4, which only supports IE 8+. It also remove
 ## Demo
 
 [Try original](http://NYTimes.github.com/ice/demo/)
-[Try this](http://kcyarn/github.com/ice/demo/)
+
+To try this, download and go to /ice/demo/index.html in your browser.
 
 ## Download
 
