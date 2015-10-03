@@ -48,7 +48,7 @@ module.exports = function(grunt) {
           '//\n'
       },
       dist: {
-        src: ['lib/rangy/rangy-core.js', 'src/polyfills.js', 'src/ice.js', 'src/dom.js', 'src/bookmark.js', 'src/selection.js', 'src/icePlugin.js', 'src/icePluginManager.js', 'src/plugins/IceAddTitlePlugin/IceAddTitlePlugin.js', 'src/plugins/IceCopyPastePlugin/IceCopyPastePlugin.js', 'src/plugins/IceSmartQuotesPlugin/IceSmartQuotesPlugin.js', 'src/plugins/IceEmdashPlugin/IceEmdashPlugin.js'],
+        src: ['lib/rangy-1.3.0/rangy-core.js', 'src/polyfills.js', 'src/ice.js', 'src/dom.js', 'src/bookmark.js', 'src/selection.js', 'src/icePlugin.js', 'src/icePluginManager.js', 'src/plugins/IceAddTitlePlugin/IceAddTitlePlugin.js', 'src/plugins/IceCopyPastePlugin/IceCopyPastePlugin.js', 'src/plugins/IceSmartQuotesPlugin/IceSmartQuotesPlugin.js', 'src/plugins/IceEmdashPlugin/IceEmdashPlugin.js', 'src/plugins/IceCriticMarkupPlugin/IceCriticMarkupPlugin.js', 'src/plugins/IceCommentsPlugin/IceCommentsPlugin.js'],
         dest: 'dist/ice.js'
       }
     },
@@ -82,16 +82,6 @@ module.exports = function(grunt) {
           'ice-master.min.js': ['dist/ice.js']
         }
       },
-      tinyice: {
-        files: {
-          'dist/ice_editor_plugin.js': 'lib/tinymce/jscripts/tiny_mce/plugins/ice/editor_plugin.js'
-        }
-      },
-      tinysr: {
-        files: {
-          'dist/sr_editor_plugin.js': 'lib/tinymce/jscripts/tiny_mce/plugins/icesearchreplace/editor_plugin.js'
-        }
-      }
     },
 
     compress: {
@@ -130,18 +120,5 @@ module.exports = function(grunt) {
 
   grunt.registerTask('build', ['clean:build', 'concat', 'uglify:ice', 'uglify:icemaster', 'compress:gz', 'cp', 'compress:zip']);
 
-  grunt.registerTask('cp', function() {
-    cpTinyDir('ice');
-    //grunt.file.delete('dist/ice_editor_plugin.js');
-
-    cpTinyDir('icesearchreplace');
-    //grunt.file.delete('dist/sr_editor_plugin.js');
-  });
-
-  var cpTinyDir = function(dir) {
-    grunt.file.recurse('lib/tinymce/jscripts/tiny_mce/plugins/' + dir + '/', function(abspath, rootdir, subdir, filename) {
-      grunt.file.copy(rootdir + '/' + (subdir ? subdir + '/' : '') + filename,'dist/tinymce/plugins/' + dir + '/' + (subdir ? subdir + '/' : '') + '/' + filename);
-    });
-  };
 
 };

@@ -5,7 +5,6 @@
 
   defaults = {
     // ice node attribute names:
-    changeIdAttribute: 'data-cid',
     userIdAttribute: 'data-userid',
     userNameAttribute: 'data-username',
     timeAttribute: 'data-time',
@@ -35,12 +34,12 @@
     // for the other types, leaving the html content in place.
     changeTypes: {
       insertType: {
-        tag: 'span',
+        tag: 'ins',
         alias: 'ins',
         action: 'Inserted'
       },
       deleteType: {
-        tag: 'span',
+        tag: 'del',
         alias: 'del',
         action: 'Deleted'
       }
@@ -93,13 +92,8 @@
     // ice node class attribute.
     _uniqueStyleIndex: 0,
 
-    _browserType: null,
-
     // One change may create multiple ice nodes, so this keeps track of the current batch id.
     _batchChangeid: null,
-
-    // Incremented for each new change, dropped in the changeIdAttribute.
-    _uniqueIDIndex: 1,
 
     // Temporary bookmark tags for deletes, when delete placeholding is active.
     _delBookmark: 'tempdel',
@@ -191,12 +185,12 @@
       }
 
     },
- 
+
     /*
      * Updates the list of changes to include all track tags found inside the element.
      */
     findTrackTags: function () {
-      
+
       // Grab class for each changeType
       var self = this, changeTypeClasses = [];
       for (var changeType in this.changeTypes) {
@@ -215,7 +209,7 @@
         }
         var userid = ice.dom.attr(el, self.userIdAttribute);
         self.setUserStyle(userid, Number(styleIndex));
-        var changeid = ice.dom.attr(el, self.changeIdAttribute);
+        var changeid = ice.dom.attr(el, self.timeAttribute);
         self._changes[changeid] = {
           type: ctnType,
           userid: userid,
@@ -391,7 +385,6 @@
      */
     deleteContents: function (right, range) {
       var prevent = true;
-    var browser = ice.dom.browser();
 
       if (range) {
         this.selection.addRange(range);
@@ -405,38 +398,18 @@
       this._deleteSelection(range);
     } else {
       this._deleteSelection(range);
-      if(browser["type"] === "mozilla"){
-        if(range.startContainer.parentNode.previousSibling){
-          range.setEnd(range.startContainer.parentNode.previousSibling, 0);
-          range.moveEnd(ice.dom.CHARACTER_UNIT, ice.dom.getNodeCharacterLength(range.endContainer));
-        } else {
-          range.setEndAfter(range.startContainer.parentNode);
-        }
-        range.collapse(false);
-      } else {
+
         if(!this.visible(range.endContainer)){
           range.setEnd(range.endContainer, range.endOffset - 1);
           range.collapse(false);
         }
-      }
+
     }
       } else {
         if (right) {
       // RIGHT DELETE
-      if(browser["type"] === "mozilla"){
-        prevent = this._deleteRight(range);
-        // Handling track change show/hide
-        if(!this.visible(range.endContainer)){
-          if(range.endContainer.parentNode.nextSibling){
-//            range.setEnd(range.endContainer.parentNode.nextSibling, 0);
-            range.setEndBefore(range.endContainer.parentNode.nextSibling);
-          } else {
-            range.setEndAfter(range.endContainer);
-          }
-          range.collapse(false);
-        }
-      }
-      else {
+
+
         // Calibrate Cursor before deleting
         if(range.endOffset === ice.dom.getNodeCharacterLength(range.endContainer)){
           var next = range.startContainer.nextSibling;
@@ -464,24 +437,11 @@
             range.collapse(true);
           }
         }
-      }
+
     }
         else {
       // LEFT DELETE
-      if(browser["type"] === "mozilla"){
-        prevent = this._deleteLeft(range);
-        // Handling track change show/hide
-        if(!this.visible(range.startContainer)){
-          if(range.startContainer.parentNode.previousSibling){
-            range.setEnd(range.startContainer.parentNode.previousSibling, 0);
-          } else {
-            range.setEnd(range.startContainer.parentNode, 0);
-          }
-          range.moveEnd(ice.dom.CHARACTER_UNIT, ice.dom.getNodeCharacterLength(range.endContainer));
-          range.collapse(false);
-        }
-      }
-      else {
+
         if(!this.visible(range.startContainer)){
           if(range.endOffset === ice.dom.getNodeCharacterLength(range.endContainer)){
             var prev = range.startContainer.previousSibling;
@@ -499,7 +459,7 @@
           }
         }
         prevent = this._deleteLeft(range);
-      }
+
     }
       }
 
@@ -636,8 +596,8 @@
       selector = delSel + ',' + insSel;
       trackNode = dom.getNode(node, selector);
       // Some changes are done in batches so there may be other tracking
-      // nodes with the same `changeIdAttribute` batch number.
-      changes = dom.find(this.element, '[' + this.changeIdAttribute + '=' + dom.attr(trackNode, this.changeIdAttribute) + ']');
+      // nodes with the same `timeAttribute` batch number. Changed from changeIdAttribute.
+      changes = dom.find(this.element, '[' + this.timeAttribute + '=' + dom.attr(trackNode, this.timeAttribute) + ']');
 
       if (!isAccept) {
         removeSel = insSel;
@@ -827,15 +787,13 @@
 
     /**
      * Adds tracking attributes from the change with changeid to the ctNode.
-     * @param changeid Id of an existing change.
+     * @param changeid Id of an existing change, which is the getTime timestamp.
      * @param ctNode The element to add for the change.
      */
     addNodeToChange: function (changeid, ctNode) {
       if (this._batchChangeid !== null) changeid = this._batchChangeid;
 
       var change = this.getChange(changeid);
-
-      if (!ctNode.getAttribute(this.changeIdAttribute)) ctNode.setAttribute(this.changeIdAttribute, changeid);
 
       if (!ctNode.getAttribute(this.userIdAttribute)) ctNode.setAttribute(this.userIdAttribute, change.userid);
 
@@ -858,7 +816,7 @@
     },
 
     getNewChangeId: function () {
-      var id = ++this._uniqueIDIndex;
+      var id = (new Date()).getTime();
       if (this._changes[id]) {
         // Dupe.. create another..
         id = this.getNewChangeId();
@@ -941,7 +899,7 @@
         elements = ice.dom.getElementsBetween(bookmark.start, bookmark.end),
         b1 = ice.dom.parents(range.startContainer, this.blockEls.join(', '))[0],
         b2 = ice.dom.parents(range.endContainer, this.blockEls.join(', '))[0],
-        betweenBlocks = new Array(); 
+        betweenBlocks = new Array();
 
       for (var i = 0; i < elements.length; i++) {
         var elem = elements[i];
@@ -1329,6 +1287,7 @@
 
     },
 
+
     // Marks text and other nodes for deletion
     _addNodeTracking: function (contentNode, range, moveLeft) {
 
@@ -1454,7 +1413,6 @@
      */
     _handleAncillaryKey: function (e) {
       var key = e.keyCode ? e.keyCode : e.which;
-      var browser = ice.dom.browser();
       var preventDefault = true;
       var shiftKey = e.shiftKey;
       var self = this;
@@ -1477,35 +1435,12 @@
         case ice.dom.DOM_VK_UP:
         case ice.dom.DOM_VK_LEFT:
           this.pluginsManager.fireCaretPositioned();
-          if (browser["type"] === "mozilla") {
-            if (!this.visible(range.startContainer)) {
-              // if Previous sibling exists in the paragraph, jump to the previous sibling
-              if(range.startContainer.parentNode.previousSibling) {
-                // When moving left and moving into a hidden element, skip it and go to the previousSibling
-                range.setEnd(range.startContainer.parentNode.previousSibling, 0);
-                range.moveEnd(ice.dom.CHARACTER_UNIT, ice.dom.getNodeCharacterLength(range.endContainer));
-                range.collapse(false);
-              }
-              // if Previous sibling doesn't exist, get out of the hidden zone by moving to the right
-              else {
-                range.setEnd(range.startContainer.parentNode.nextSibling, 0);
-                range.collapse(false);
-              }
-            }
-          }
+
           preventDefault = false;
           break;
         case ice.dom.DOM_VK_RIGHT:
           this.pluginsManager.fireCaretPositioned();
-          if (browser["type"] === "mozilla") {
-            if (!this.visible(range.startContainer)) {
-              if(range.startContainer.parentNode.nextSibling) {
-                // When moving right and moving into a hidden element, skip it and go to the nextSibling
-                range.setStart(range.startContainer.parentNode.nextSibling,0);
-                range.collapse(true);
-              }
-            }
-          }
+
           preventDefault = false;
           break;
         /** END: Handling of caret movements inside hidden .ins/.del elements ***************/
@@ -1538,18 +1473,9 @@
       var preventDefault = false;
 
       if (this._handleSpecialKey(e) === false) {
-        if (ice.dom.isBrowser('msie') !== true) {
-          this._preventKeyPress = true;
-        }
+
 
         return false;
-      } else if ((e.ctrlKey === true || e.metaKey === true) && (ice.dom.isBrowser('msie') === true || ice.dom.isBrowser('chrome') === true)) {
-        // IE does not fire keyPress event if ctrl is also pressed.
-        // E.g. CTRL + B (Bold) will not fire keyPress so this.plugins
-        // needs to be notified here for IE.
-        if (!this.pluginsManager.fireKeyPressed(e)) {
-          return false;
-        }
       }
       switch (e.keyCode) {
         case 27:
@@ -1558,9 +1484,8 @@
         default:
           // If not Firefox then check if event is special arrow key etc.
           // Firefox will handle this in keyPress event.
-          if (/Firefox/.test(navigator.userAgent) !== true) {
             preventDefault = !(this._handleAncillaryKey(e));
-          }
+
           break;
       }
 
@@ -1576,7 +1501,7 @@
         this._preventKeyPress = false;
         return;
       }
-      
+
       if (!this.pluginsManager.fireKeyPress(e)) return false;
 
       var c = null;
@@ -1637,25 +1562,10 @@
             preventDefault = true;
             var range = this.getCurrentRange();
 
-            if (ice.dom.isBrowser('msie') === true) {
-              var selStart = this.env.document.createTextNode('');
-              var selEnd = this.env.document.createTextNode('');
-
-              if (this.element.firstChild) {
-                ice.dom.insertBefore(this.element.firstChild, selStart);
-              } else {
-                this.element.appendChild(selStart);
-              }
-
-              this.element.appendChild(selEnd);
-
-              range.setStart(selStart, 0);
-              range.setEnd(selEnd, 0);
-            } else {
               range.setStart(range.getFirstSelectableChild(this.element), 0);
               var lastSelectable = range.getLastSelectableChild(this.element);
               range.setEnd(lastSelectable, lastSelectable.length);
-            } //end if
+
 
             this.selection.addRange(range);
           } //end if

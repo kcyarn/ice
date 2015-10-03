@@ -4,7 +4,7 @@ var exports = this;
 
 /**
  * When active, this plugin will convert two successively typed dashes, within
- * the ice block element, into an emdash. 
+ * the ice block element, into an emdash.
  */
 var IceEmdashPlugin = function(ice_instance) {
 	this._ice = ice_instance;
@@ -14,17 +14,12 @@ IceEmdashPlugin.prototype = {
 
 	keyDown: function(e) {
 		// Catch dashes.
-		if (ice.dom.isBrowser('mozilla')) {
-      var version = parseInt(ice.dom.browser().version);
-      if ((version > 14 && e.keyCode === 173) || (version <= 14 && e.keyCode === 109)) {
-        return this.convertEmdash(e);
-      }
-		} else if (e.keyCode === 189) {
+ if (e.keyCode === 189) {
 			return this.convertEmdash(e);
 		}
 		return true;
 	},
-	
+
 	convertEmdash: function(e) {
 		var range = this._ice.getCurrentRange();
 		if(range.collapsed) {
